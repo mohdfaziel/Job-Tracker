@@ -6,7 +6,6 @@ import Dashboard from './pages/Dashboard.jsx';
 import JobForm from './pages/JobForm.jsx';
 import JobDetails from './pages/JobDetails.jsx';
 import Layout from './components/Layout.jsx';
-import Notifications from './components/Notifications.jsx';
 
 function App() {
   const { user, loading } = useAuth();
@@ -18,7 +17,6 @@ function App() {
       </div>
     );
   }
-
   return (
     <>
       <Routes>
@@ -32,7 +30,6 @@ function App() {
           <Route path="jobs/:id" element={<JobDetails />} />
         </Route>
       </Routes>
-      <Notifications />
     </>
   );
 }

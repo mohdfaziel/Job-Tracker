@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 /**
  * Notifications component that displays all active notifications
@@ -43,34 +44,9 @@ const Notifications = () => {
         return 'bg-blue-50 border-blue-200';
     }
   };
-
-  if (notifications.length === 0) return null;
-
-  return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
-      {notifications.map(notification => (
-        <div 
-          key={notification.id}
-          className={`p-4 rounded-lg border shadow-lg animate-slide-in ${getBackgroundColor(notification.type)}`}
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              {getIcon(notification.type)}
-            </div>
-            <div className="flex-grow">
-              <p className="text-gray-900 font-medium">{notification.message}</p>
-            </div>
-            <button 
-              onClick={() => removeNotification(notification.id)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  // No longer showing toast notifications, only accessible through the dropdown
+  // Always return null since we don't want to render anything in the global space
+  return null;
 };
 
 export default Notifications;

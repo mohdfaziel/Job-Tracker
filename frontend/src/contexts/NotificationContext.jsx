@@ -25,6 +25,18 @@ export const NotificationProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const { user } = useAuth();
 
+  // Load notifications from local storage on mount
+  useEffect(() => {
+    try {
+      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      if (storedNotifications.length > 0) {
+        setNotifications(storedNotifications);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  }, []);
+
   // Connect to socket when user is authenticated
   useEffect(() => {
     if (user) {
@@ -44,9 +56,7 @@ export const NotificationProvider = ({ children }) => {
         newSocket.close();
       };
     }
-  }, [user]);
-
-  /**
+  }, [user]);  /**
    * Add a new notification
    * @param {string} message - The notification message
    * @param {string} type - The notification type (info, success, warning, error)
@@ -59,20 +69,32 @@ export const NotificationProvider = ({ children }) => {
       timestamp: new Date(),
     };
 
+    // Add notification to the beginning of the array
     setNotifications(prev => [notification, ...prev]);
-
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-      removeNotification(notification.id);
-    }, 5000);
+    
+    // Store notifications in local storage to persist between sessions
+    try {
+      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      localStorage.setItem('notifications', JSON.stringify([notification, ...storedNotifications].slice(0, 50)));
+    } catch (error) {
+      console.error('Error storing notifications:', error);
+    }
   };
-
   /**
    * Remove a notification by ID
    * @param {string} id - The notification ID
    */
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setNotifications(prev => {
+      const updatedNotifications = prev.filter(notification => notification.id !== id);
+      // Update local storage
+      try {
+        localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+      } catch (error) {
+        console.error('Error updating notifications in storage:', error);
+      }
+      return updatedNotifications;
+    });
   };
 
   /**
@@ -80,6 +102,12 @@ export const NotificationProvider = ({ children }) => {
    */
   const clearNotifications = () => {
     setNotifications([]);
+    // Clear notifications in local storage
+    try {
+      localStorage.setItem('notifications', JSON.stringify([]));
+    } catch (error) {
+      console.error('Error clearing notifications in storage:', error);
+    }
   };
 
   // Context value
