@@ -193,7 +193,7 @@ const Layout = () => {
                 {location.pathname.includes('/jobs/') && !location.pathname.includes('/edit') && !location.pathname.includes('/new') && 'Job Details'}
               </h2>
             </div>            <div className="flex items-center space-x-4">
-              <div className="relative" id="notification-dropdown-container">
+              <div className="static sm:relative" id="notification-dropdown-container">
                 <button 
                   data-notification-toggle
                   onClick={toggleNotifications} 
@@ -206,31 +206,49 @@ const Layout = () => {
                       {notifications.length}
                     </span>
                   )}
-                </button>
-                
-                {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-96 max-h-[70vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 z-50 animate-fadeIn">
-                    <div className="sticky top-0 p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white">
+                </button>                {notificationsOpen && (
+                  <>
+                    {/* Mobile backdrop */}
+                    <div 
+                      className="sm:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNotificationsOpen(false);
+                      }}
+                    />
+                    <div className="fixed sm:absolute top-16 sm:top-auto right-1 sm:right-0 left-1 sm:left-auto mt-0 sm:mt-2 w-auto sm:w-80 md:w-96 max-h-[calc(100vh-5rem)] sm:max-h-[70vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 z-50 animate-fadeIn origin-top-right"><div className="sticky top-0 p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white">
                       <h3 className="font-semibold text-primary-700 flex items-center gap-2">
                         <Bell className="h-5 w-5" />
-                        Notifications
+                        <span>Notifications</span>
                         {notifications.length > 0 && (
                           <span className="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full">
                             {notifications.length}
                           </span>
                         )}
                       </h3>
-                      {notifications.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        {notifications.length > 0 && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearNotifications();
+                            }}
+                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
+                          >
+                            Clear all
+                          </button>
+                        )}
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            clearNotifications();
+                            setNotificationsOpen(false);
                           }}
-                          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
+                          className="sm:hidden p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
+                          aria-label="Close notifications"
                         >
-                          Clear all
+                          <X className="h-4 w-4" />
                         </button>
-                      )}
+                      </div>
                     </div>
                     
                     <div className="divide-y divide-gray-100">                      {notifications.length === 0 ? (
@@ -256,13 +274,12 @@ const Layout = () => {
                               <div className="flex items-start gap-3">
                                 <div className="flex-shrink-0 mt-0.5">
                                   {getIcon(notification.type)}
-                                </div>
-                                <div className="flex-grow">
-                                  <p className="text-sm text-gray-800 font-medium">{notification.message}</p>
+                                </div>                                <div className="flex-grow overflow-hidden">
+                                  <p className="text-sm text-gray-800 font-medium break-words">{notification.message}</p>
                                   <p className="text-xs text-gray-500 mt-1">
                                     {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
                                   </p>
-                                </div>                                <button 
+                                </div><button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     removeNotification(notification.id);
@@ -276,15 +293,13 @@ const Layout = () => {
                             </div>
                           );
                         })
-                      )}
-                    </div>
+                      )}                    </div>
                   </div>
+                  </>
                 )}
               </div>
             </div>
-          </div>        </header>
-
-        {/* Page Content */}
+          </div>        </header>      {/* Page Content */}
         <main className="flex-1 p-6">
           <Outlet />
         </main>
