@@ -54,24 +54,29 @@ const Layout = () => {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  const toggleNotifications = () => {
-    setNotificationsOpen(!notificationsOpen);
+  const toggleNotifications = (e) => {
+    // Stop event propagation to prevent immediate closing
+    if (e) e.stopPropagation();
+    setNotificationsOpen(prev => !prev);
   };
-
   // Close notifications when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const notificationContainer = document.getElementById('notification-container');
-      if (notificationContainer && !notificationContainer.contains(event.target) && 
-          !event.target.closest('[data-notification-toggle]')) {
+      const notificationContainer = document.getElementById('notification-dropdown-container');
+      // Only run this logic when notifications are open
+      if (notificationsOpen && 
+          notificationContainer && 
+          !notificationContainer.contains(event.target)) {
         setNotificationsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    // Add event listener only when notifications are open
+    if (notificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [notificationsOpen]);
 
   // Get icon based on notification type
   const getIcon = (type) => {
@@ -187,8 +192,9 @@ const Layout = () => {
                 {location.pathname.includes('/jobs/') && location.pathname.includes('/edit') && 'Edit Job'}
                 {location.pathname.includes('/jobs/') && !location.pathname.includes('/edit') && !location.pathname.includes('/new') && 'Job Details'}
               </h2>
-            </div>
-            <div className="flex items-center space-x-4">              <div className="relative" id="notification-container">                <button 
+            </div>            <div className="flex items-center space-x-4">
+              <div className="relative" id="notification-dropdown-container">
+                <button 
                   data-notification-toggle
                   onClick={toggleNotifications} 
                   className="relative p-2 rounded-md hover:bg-gray-100 transition-colors focus:outline-none border border-gray-200"
@@ -201,7 +207,8 @@ const Layout = () => {
                     </span>
                   )}
                 </button>
-                  {notificationsOpen && (
+                
+                {notificationsOpen && (
                   <div className="absolute right-0 mt-2 w-96 max-h-[70vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 z-50 animate-fadeIn">
                     <div className="sticky top-0 p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white">
                       <h3 className="font-semibold text-primary-700 flex items-center gap-2">
@@ -215,7 +222,10 @@ const Layout = () => {
                       </h3>
                       {notifications.length > 0 && (
                         <button 
-                          onClick={clearNotifications}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearNotifications();
+                          }}
                           className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
                         >
                           Clear all
@@ -252,9 +262,11 @@ const Layout = () => {
                                   <p className="text-xs text-gray-500 mt-1">
                                     {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
                                   </p>
-                                </div>
-                                <button 
-                                  onClick={() => removeNotification(notification.id)}
+                                </div>                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeNotification(notification.id);
+                                  }}
                                   className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full"
                                   aria-label="Remove notification"
                                 >
@@ -270,54 +282,7 @@ const Layout = () => {
                 )}
               </div>
             </div>
-          </div>
-        </header>
-
-        {/* Notifications Dropdown */}
-        {notificationsOpen && (
-          <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg overflow-hidden z-30" id="notification-container">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-              <button
-                onClick={clearNotifications}
-                className="text-xs text-gray-500 hover:text-gray-700"
-                title="Clear all notifications"
-              >
-                Clear All
-              </button>
-            </div>
-            <div className="max-h-60 overflow-y-auto">
-              {notifications.length === 0 && (
-                <div className="p-4 text-center text-gray-500 text-sm">
-                  No new notifications
-                </div>
-              )}
-              {notifications.map((notification) => (
-                <div 
-                  key={notification.id} 
-                  className="flex items-start p-4 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="mr-3">
-                    {getIcon(notification.type)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900 font-medium">{notification.message}</p>
-                    <p className="text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => removeNotification(notification.id)}
-                    className="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded-full"
-                    title="Remove notification"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          </div>        </header>
 
         {/* Page Content */}
         <main className="flex-1 p-6">
