@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { jobsAPI } from '../services/api.js';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
 import JobCard from '../components/JobCard.jsx';
+import ConfirmationModal from '../components/ConfirmationModal.jsx';
 import { Plus, Filter, Search, BarChart3, Briefcase, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 const Dashboard = () => {
@@ -46,15 +47,22 @@ const Dashboard = () => {
       console.error('Error loading stats:', error);
     }
   };
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState(null);
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this job application?')) {
-      return;
-    }
+  const handleDelete = (id) => {
+    // Find the job to show its details in the confirmation modal
+    const jobToDelete = jobs.find(job => job._id === id);
+    setJobToDelete(jobToDelete);
+    setDeleteModalOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!jobToDelete) return;
+    
     try {
-      await jobsAPI.deleteJob(id);
-      setJobs(jobs.filter((job) => job._id !== id));
+      await jobsAPI.deleteJob(jobToDelete._id);
+      setJobs(jobs.filter((job) => job._id !== jobToDelete._id));
       addNotification('Job application deleted successfully', 'success');
       // Refresh stats
       loadStats();
@@ -230,9 +238,20 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredJobs.map((job) => (
             <JobCard key={job._id} job={job} onDelete={handleDelete} />
-          ))}
-        </div>
+          ))}        </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Job Application"
+        message={jobToDelete ? `Are you sure you want to delete the application for ${jobToDelete.position} at ${jobToDelete.company}?` : 'Are you sure you want to delete this job application?'}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };
