@@ -46,22 +46,8 @@ const Layout = () => {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
   return (
     <div className="min-h-screen bg-gray-50 flex relative">
-      {/* Mobile Menu Button - Only visible on small screens */}
-      <button 
-        onClick={toggleSidebar}
-        className="md:hidden fixed top-4 left-4 z-20 p-2 rounded-md bg-white shadow-md"
-        aria-label="Toggle menu"
-      >
-        {sidebarOpen ? (
-          <X className="h-6 w-6 text-gray-600" />
-        ) : (
-          <Menu className="h-6 w-6 text-gray-600" />
-        )}
-      </button>
-      
       {/* Overlay for mobile when sidebar is open */}
       {sidebarOpen && (
         <div 
@@ -139,13 +125,23 @@ const Layout = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:ml-0">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 ml-0 md:ml-64">
+      <div className="flex-1 flex flex-col md:ml-0">        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 ml-0">
           <div className="flex items-center justify-between">
-            <div className="ml-8 md:ml-0">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {location.pathname === '/dashboard' && 'Dashboard'}
+            <div className="flex items-center space-x-3">
+              {/* Mobile Menu Button - Only visible on small screens */}
+              <button 
+                onClick={toggleSidebar}
+                className="md:hidden p-2 rounded-md hover:bg-gray-100"
+                aria-label="Toggle menu"
+              >
+                {sidebarOpen ? (
+                  <X className="h-6 w-6 text-gray-600" />
+                ) : (
+                  <Menu className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
+              <h2 className="text-2xl font-bold text-gray-900">                {location.pathname === '/dashboard' && 'Dashboard'}
                 {location.pathname === '/jobs/new' && 'Add New Job'}
                 {location.pathname.includes('/jobs/') && location.pathname.includes('/edit') && 'Edit Job'}
                 {location.pathname.includes('/jobs/') && !location.pathname.includes('/edit') && !location.pathname.includes('/new') && 'Job Details'}
