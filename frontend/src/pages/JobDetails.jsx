@@ -3,8 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { jobsAPI } from '../services/api.js';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
-import { convertUSDtoINR } from '../utils/currencyConverter.js';
-import { 
+import {
   ArrowLeft, 
   Edit, 
   Trash2, 
@@ -165,8 +164,7 @@ const JobDetails = () => {
                   <Banknote className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Salary</p>
-                    <p className="font-medium text-gray-900">{convertUSDtoINR(job.salary)}</p>
-                    <p className="text-xs text-gray-500">(Original: {job.salary})</p>
+                    <p className="font-medium text-gray-900">{job.salary}</p>
                   </div>
                 </div>
               )}

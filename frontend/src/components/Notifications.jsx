@@ -2,9 +2,17 @@ import React from 'react';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
+/**
+ * Notifications component that displays all active notifications
+ */
 const Notifications = () => {
   const { notifications, removeNotification } = useNotifications();
 
+  /**
+   * Get the appropriate icon for notification type
+   * @param {string} type - The notification type
+   * @returns {JSX.Element} The icon component
+   */
   const getIcon = (type) => {
     switch (type) {
       case 'success':
@@ -18,6 +26,11 @@ const Notifications = () => {
     }
   };
 
+  /**
+   * Get background color based on notification type
+   * @param {string} type - The notification type
+   * @returns {string} CSS class for background color
+   */
   const getBackgroundColor = (type) => {
     switch (type) {
       case 'success':
@@ -34,24 +47,24 @@ const Notifications = () => {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-      {notifications.map((notification) => (
-        <div
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
+      {notifications.map(notification => (
+        <div 
           key={notification.id}
           className={`p-4 rounded-lg border shadow-lg animate-slide-in ${getBackgroundColor(notification.type)}`}
         >
-          <div className="flex items-start space-x-3">
-            {getIcon(notification.type)}
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">
-                {notification.message}
-              </p>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              {getIcon(notification.type)}
             </div>
-            <button
+            <div className="flex-grow">
+              <p className="text-gray-900 font-medium">{notification.message}</p>
+            </div>
+            <button 
               onClick={() => removeNotification(notification.id)}
               className="text-gray-400 hover:text-gray-600"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>

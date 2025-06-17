@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { jobsAPI } from '../services/api.js';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
-import { Save, ArrowLeft, HelpCircle, Banknote } from 'lucide-react';
+import { Save, ArrowLeft, Banknote } from 'lucide-react';
 
 const JobForm = () => {
   const navigate = useNavigate();
@@ -210,17 +210,9 @@ const JobForm = () => {
               onChange={handleChange}
             />
           </div>          {/* Salary */}
-          <div>
-            <div className="flex items-center mb-2">
-              <label htmlFor="salary" className="block text-sm font-medium text-gray-700">
-                Salary (USD)
-              </label>
-              <div className="relative ml-2 group">
-                <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded p-2 w-48">
-                  Enter salary amounts which will be displayed as Indian Rupees (₹) in the application.
-                </div>
-              </div>
-            </div>            <div className="relative">
+          <div>            <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
+                Salary
+            </label><div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Banknote className="h-5 w-5 text-gray-400" />
               </div>
