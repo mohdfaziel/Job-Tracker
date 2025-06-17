@@ -3,13 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { jobsAPI } from '../services/api.js';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
+import { convertUSDtoINR } from '../utils/currencyConverter.js';
 import { 
   ArrowLeft, 
   Edit, 
   Trash2, 
   Calendar, 
   MapPin, 
-  DollarSign, 
+  Banknote, 
   ExternalLink,
   Building,
   User
@@ -159,14 +160,13 @@ const JobDetails = () => {
                     <p className="font-medium text-gray-900">{job.location}</p>
                   </div>
                 </div>
-              )}
-
-              {job.salary && (
+              )}              {job.salary && (
                 <div className="flex items-center space-x-3">
-                  <DollarSign className="h-5 w-5 text-gray-400" />
+                  <Banknote className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Salary</p>
-                    <p className="font-medium text-gray-900">{job.salary}</p>
+                    <p className="font-medium text-gray-900">{convertUSDtoINR(job.salary)}</p>
+                    <p className="text-xs text-gray-500">(Original: {job.salary})</p>
                   </div>
                 </div>
               )}

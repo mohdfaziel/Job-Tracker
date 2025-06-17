@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Calendar, MapPin, DollarSign, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Banknote, Edit, Trash2 } from 'lucide-react';
+import { convertUSDtoINR } from '../utils/currencyConverter.js';
 
 const JobCard = ({ job, onDelete }) => {
   const getStatusClass = (status) => {
@@ -56,11 +57,10 @@ const JobCard = ({ job, onDelete }) => {
             <MapPin className="h-4 w-4" />
             <span>{job.location}</span>
           </div>
-        )}
-        {job.salary && (
+        )}        {job.salary && (
           <div className="flex items-center space-x-1">
-            <DollarSign className="h-4 w-4" />
-            <span>{job.salary}</span>
+            <Banknote className="h-4 w-4" />
+            <span>{convertUSDtoINR(job.salary)}</span>
           </div>
         )}
       </div>
