@@ -89,25 +89,21 @@ const Dashboard = () => {
     { value: '-company', label: 'Company (Z-A)' },
     { value: 'position', label: 'Position (A-Z)' },
     { value: '-position', label: 'Position (Z-A)' },
-  ];
-
-  const StatCard = ({ title, value, icon, color }) => (
+  ];  const StatCard = ({ title, value, icon, color }) => (
     <div className="stat-card">
-      <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${color}`}>
+      <div className="flex items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100 h-full">
+        <div className={`p-2 rounded-lg ${color} flex-shrink-0`}>
           {icon}
         </div>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-          <p className="text-xl font-bold text-gray-900">{value}</p>
+        <div className="ml-2 overflow-hidden">
+          <h3 className="text-sm font-medium text-gray-500 truncate">{title}</h3>
+          <p className="text-lg font-bold text-gray-900">{value}</p>
         </div>
       </div>
     </div>
-  );  return (
-    <div>
-      
-      {/* Stats */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+  );return (
+    <div>      {/* Stats */}
+      <div className="mb-8 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard
           title="Total Jobs"
           value={stats.total}
