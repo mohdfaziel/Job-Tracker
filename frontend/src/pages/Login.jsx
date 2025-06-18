@@ -2,25 +2,62 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
-import { Briefcase, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Briefcase, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const { login } = useAuth();
   const { addNotification } = useNotifications();
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
       await login(email, password);
       addNotification('Welcome back! You have successfully logged in.', 'success');
     } catch (error) {
-      addNotification(error instanceof Error ? error.message : 'Login failed', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      addNotification(errorMessage, 'error');
+      
+      // Set form-specific errors based on error message
+      if (errorMessage.toLowerCase().includes('email or password')) {
+        setErrors({
+          auth: 'Invalid email or password. Please try again.'
+        });
+      } else {
+        setErrors({
+          auth: errorMessage
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -43,7 +80,15 @@ const Login = () => {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>          {errors.auth && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                <p className="text-red-700 text-sm">{errors.auth}</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
@@ -59,12 +104,21 @@ const Login = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="input-field pl-10"
+                  className={`input-field pl-10 ${errors.email ? 'border-red-500' : ''}`}
                   placeholder="Email address"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors({...errors, email: ''});
+                  }}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             <div>
@@ -81,10 +135,13 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className="input-field pl-10 pr-10"
+                  className={`input-field pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
                   placeholder="Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors({...errors, password: ''});
+                  }}
                 />
                 <button
                   type="button"
@@ -98,6 +155,12 @@ const Login = () => {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.password}
+                </p>
+              )}
             </div>
           </div>
 

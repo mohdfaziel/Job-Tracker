@@ -10,8 +10,15 @@ const getAuthHeaders = () => {
 
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Something went wrong');
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.message || 
+      (response.status === 401 ? 'Invalid credentials' : 
+       response.status === 400 ? 'Invalid input data' : 
+       response.status === 403 ? 'Not authorized' : 
+       response.status === 404 ? 'Resource not found' : 
+       'Something went wrong');
+    
+    throw new Error(errorMessage);
   }
   return response.json();
 };
