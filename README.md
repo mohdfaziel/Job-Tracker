@@ -1,5 +1,7 @@
 # Job Tracker - Track Your Job Applications
 
+![Job Tracker](https://i.imgur.com/sample_image.png)
+
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
