@@ -26,18 +26,26 @@ export const NotificationProvider = ({ children }) => {
   const [connectionError, setConnectionError] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const { user } = useAuth();
-
-  // Load notifications from local storage on mount
+  // Load notifications from local storage on mount or when user changes
   useEffect(() => {
-    try {
-      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-      if (storedNotifications.length > 0) {
-        setNotifications(storedNotifications);
+    if (user) {
+      try {
+        const storageKey = `notifications_${user.id}`;
+        const storedNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        if (storedNotifications.length > 0) {
+          setNotifications(storedNotifications);
+        } else {
+          // Clear notifications when switching to a user with no stored notifications
+          setNotifications([]);
+        }
+      } catch (error) {
+        console.error('Error loading notifications:', error);
       }
-    } catch (error) {
-      console.error('Error loading notifications:', error);
+    } else {
+      // Clear notifications when no user is logged in
+      setNotifications([]);
     }
-  }, []);
+  }, [user]);
 
   // Connect to socket when user is authenticated
   useEffect(() => {
@@ -198,10 +206,13 @@ export const NotificationProvider = ({ children }) => {
     // Add notification to the beginning of the array
     setNotifications(prev => [notification, ...prev]);
     
-    // Store notifications in local storage to persist between sessions
+  // Store notifications in local storage to persist between sessions - using user-specific key
     try {
-      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-      localStorage.setItem('notifications', JSON.stringify([notification, ...storedNotifications].slice(0, 50)));
+      if (user) {
+        const storageKey = `notifications_${user.id}`;
+        const storedNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        localStorage.setItem(storageKey, JSON.stringify([notification, ...storedNotifications].slice(0, 50)));
+      }
     } catch (error) {
       console.error('Error storing notifications:', error);
     }
@@ -209,13 +220,15 @@ export const NotificationProvider = ({ children }) => {
   /**
    * Remove a notification by ID
    * @param {string} id - The notification ID
-   */
-  const removeNotification = (id) => {
+   */  const removeNotification = (id) => {
     setNotifications(prev => {
       const updatedNotifications = prev.filter(notification => notification.id !== id);
-      // Update local storage
+      // Update local storage with user-specific key
       try {
-        localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+        if (user) {
+          const storageKey = `notifications_${user.id}`;
+          localStorage.setItem(storageKey, JSON.stringify(updatedNotifications));
+        }
       } catch (error) {
         console.error('Error updating notifications in storage:', error);
       }
@@ -225,12 +238,14 @@ export const NotificationProvider = ({ children }) => {
 
   /**
    * Clear all notifications
-   */
-  const clearNotifications = () => {
+   */  const clearNotifications = () => {
     setNotifications([]);
-    // Clear notifications in local storage
+    // Clear notifications in local storage with user-specific key
     try {
-      localStorage.setItem('notifications', JSON.stringify([]));
+      if (user) {
+        const storageKey = `notifications_${user.id}`;
+        localStorage.setItem(storageKey, JSON.stringify([]));
+      }
     } catch (error) {
       console.error('Error clearing notifications in storage:', error);
     }

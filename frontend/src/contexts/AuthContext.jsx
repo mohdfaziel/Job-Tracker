@@ -55,10 +55,17 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
   };
-
   const logout = () => {
+    // Preserve userId to clear user-specific notifications
+    const userData = user;
+    
     localStorage.removeItem('token');
     setUser(null);
+    
+    // Clear any notifications from this session
+    if (userData && userData.id) {
+      localStorage.removeItem(`notifications_${userData.id}`);
+    }
   };
 
   const value = {
