@@ -40,14 +40,31 @@ export const NotificationProvider = ({ children }) => {
   // Connect to socket when user is authenticated
   useEffect(() => {
     if (user) {
-      const newSocket = io('http://localhost:5000', {
+      // Use the correct URL based on environment
+      const socketUrl = import.meta.env.VITE_API_URL 
+        ? new URL(import.meta.env.VITE_API_URL).origin 
+        : 'http://localhost:5000';
+      
+      console.log(`Connecting to socket at: ${socketUrl}`);
+      
+      const newSocket = io(socketUrl, {
         auth: {
-          token: localStorage.getItem('token')
+          token: localStorage.getItem('token'),
+          userId: user.id // Send user ID for proper room assignment
         }
+      });      newSocket.on('notification', (data) => {
+        console.log('Received notification:', data);
+        addNotification(data.message, data.type);
+      });
+      
+      newSocket.on('connect', () => {
+        console.log('Socket connected with ID:', newSocket.id);
+        addNotification(`Connected successfully. Notifications will now sync across all your devices.`, 'success');
       });
 
-      newSocket.on('notification', (data) => {
-        addNotification(data.message, data.type);
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        addNotification(`Connection error: ${error.message}. Real-time updates may be unavailable.`, 'error');
       });
 
       setSocket(newSocket);
@@ -56,7 +73,23 @@ export const NotificationProvider = ({ children }) => {
         newSocket.close();
       };
     }
-  }, [user]);  /**
+  }, [user]);
+  
+  // Keep socket connection alive with a ping every minute
+  useEffect(() => {
+    if (socket) {
+      const pingInterval = setInterval(() => {
+        if (socket.connected) {
+          console.log('Sending ping to keep socket connection alive');
+          socket.emit('ping');
+        }
+      }, 60000); // 1 minute
+
+      return () => clearInterval(pingInterval);
+    }
+  }, [socket]);
+
+  /**
    * Add a new notification
    * @param {string} message - The notification message
    * @param {string} type - The notification type (info, success, warning, error)

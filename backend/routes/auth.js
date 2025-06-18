@@ -54,12 +54,8 @@ router.post('/register', async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
-    // Send notification via socket
-    const io = req.app.get('io');
-    io.emit('notification', {
-      message: `Welcome ${name}! Your account has been created successfully.`,
-      type: 'success'
-    });
+    // For registration, we don't have socket connections yet, 
+    // so this notification will be handled on the client side
 
     res.status(201).json({
       token,
@@ -103,6 +99,7 @@ router.post('/login', async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // Login doesn't need socket notification since the client doesn't have a socket connection yet
     res.json({
       token,
       user: {

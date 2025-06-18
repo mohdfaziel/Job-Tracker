@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import jobRoutes from './routes/jobs.js';
@@ -17,9 +18,13 @@ console.log(`Server starting in ${process.env.NODE_ENV || 'development'} mode`);
 
 const app = express();
 const httpServer = createServer(app);
-// For Vercel deployment specifically, we need a simpler CORS setup
+// Get frontend URL from environment variables
+const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+console.log(`Using frontend URL: ${frontendURL}`);
+
+// CORS setup for Vercel deployment
 const corsOptions = {
-  origin: '*', // In production, consider tightening this for security
+  origin: [frontendURL, 'http://localhost:3000', 'https://job-tracker-elite.vercel.app'],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -28,7 +33,15 @@ const corsOptions = {
 };
 
 const io = new Server(httpServer, {
-  cors: corsOptions
+  cors: {
+    origin: corsOptions.origin,
+    methods: corsOptions.methods,
+    credentials: true,
+    allowedHeaders: corsOptions.allowedHeaders
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000, // 60 seconds before a client is considered disconnected
+  pingInterval: 25000 // Send a ping every 25 seconds
 });
 
 // Connect to MongoDB
@@ -50,20 +63,49 @@ io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
     if (token) {
-      // In a real application, you would verify the token here
-      socket.userId = 'user-id'; // Set user ID from token
+      try {
+        // Verify the token and extract user ID
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.userId = decoded.id;
+        console.log(`Authenticated user connected: ${socket.userId}`);
+        
+        // Add socket to a room specific to this user
+        socket.join(`user-${socket.userId}`);
+      } catch (tokenError) {
+        console.error('Token verification failed:', tokenError);
+        socket.userId = null;
+      }
     }
     next();
   } catch (err) {
+    console.error('Socket authentication error:', err);
     next(new Error('Authentication error'));
   }
 });
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log(`Socket connected: ${socket.id}, User ID: ${socket.userId || 'unauthenticated'}`);
+  
+  // Create a mapping between users and their active socket IDs
+  // This allows us to emit to specific users across multiple devices
+  if (socket.userId) {
+    // Store user's socket in memory (for multi-device support)
+    const userRoom = `user-${socket.userId}`;
+    socket.join(userRoom);
+    console.log(`User ${socket.userId} joined room ${userRoom}`);
+  }
+  
+  // Handle ping event to keep connection alive
+  socket.on('ping', () => {
+    // Just respond to keep the connection alive
+    if (socket.userId) {
+      const userRoom = `user-${socket.userId}`;
+      console.log(`Ping received from user ${socket.userId} in room ${userRoom}`);
+    }
+  });
   
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log(`Socket disconnected: ${socket.id}, User ID: ${socket.userId || 'unauthenticated'}`);
   });
 });
 

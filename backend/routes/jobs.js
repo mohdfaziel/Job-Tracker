@@ -127,9 +127,10 @@ router.post('/', async (req, res) => {
 
     await job.save();
 
-    // Send real-time notification
+    // Send real-time notification to all user's connected devices
     const io = req.app.get('io');
-    io.emit('notification', {
+    const userRoom = `user-${req.user._id}`;
+    io.to(userRoom).emit('notification', {
       message: `New job application added for ${job.position} at ${job.company}`,
       type: 'success'
     });
@@ -162,9 +163,10 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    // Send real-time notification
+    // Send real-time notification to all user's connected devices
     const io = req.app.get('io');
-    io.emit('notification', {
+    const userRoom = `user-${req.user._id}`;
+    io.to(userRoom).emit('notification', {
       message: `Job application updated: ${job.position} at ${job.company}`,
       type: 'info'
     });
@@ -190,9 +192,10 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    // Send real-time notification
+    // Send real-time notification to all user's connected devices
     const io = req.app.get('io');
-    io.emit('notification', {
+    const userRoom = `user-${req.user._id}`;
+    io.to(userRoom).emit('notification', {
       message: `Job application deleted: ${job.position} at ${job.company}`,
       type: 'warning'
     });
