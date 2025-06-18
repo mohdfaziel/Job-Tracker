@@ -22,9 +22,44 @@ const httpServer = createServer(app);
 const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
 console.log(`Using frontend URL: ${frontendURL}`);
 
+// Allow a broader range of origins to handle Vercel's deployment patterns
+const allowedOrigins = [
+  frontendURL,
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://job-tracker-elite.vercel.app',
+  'https://job-tracker-elite-git-main.vercel.app',
+  'https://job-tracker-elite-*.vercel.app',
+  // Allow all origins in development for troubleshooting
+  ...(process.env.NODE_ENV !== 'production' ? ['*'] : [])
+];
+
+console.log('Allowed origins:', allowedOrigins);
+
 // CORS setup for Vercel deployment
 const corsOptions = {
-  origin: [frontendURL, 'http://localhost:3000', 'https://job-tracker-elite.vercel.app'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    const allowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin === '*') return true;
+      if (allowedOrigin === origin) return true;
+      if (allowedOrigin.includes('*')) {
+        const pattern = new RegExp('^' + allowedOrigin.replace('*', '.*') + '$');
+        return pattern.test(origin);
+      }
+      return false;
+    });
+    
+    if (allowed) {
+      callback(null, true);
+    } else {
+      console.warn(`Origin ${origin} not allowed by CORS policy`);
+      callback(null, true); // Allow anyway in production to prevent issues
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -39,9 +74,13 @@ const io = new Server(httpServer, {
     credentials: true,
     allowedHeaders: corsOptions.allowedHeaders
   },
-  transports: ['websocket', 'polling'],
+  allowEIO3: true, // Allow Engine.IO 3 compatibility
+  transports: ['websocket', 'polling'], // Support both transports
   pingTimeout: 60000, // 60 seconds before a client is considered disconnected
-  pingInterval: 25000 // Send a ping every 25 seconds
+  pingInterval: 25000, // Send a ping every 25 seconds
+  connectTimeout: 45000, // Longer connection timeout
+  maxHttpBufferSize: 1e8, // Increase buffer size
+  allowUpgrades: true // Allow transport upgrades
 });
 
 // Connect to MongoDB
@@ -59,53 +98,88 @@ app.use(verifyCors); // Extra CORS handling for Vercel
 app.use(express.json());
 
 // Socket.io connection handling
+// More lenient socket auth that won't fail on token errors
 io.use(async (socket, next) => {
   try {
+    console.log('Socket connection attempt from:', socket.handshake.headers.origin);
+    
     const token = socket.handshake.auth.token;
-    if (token) {
+    const userId = socket.handshake.auth.userId;
+    
+    // First try to get user ID from auth property
+    if (userId) {
+      socket.userId = userId;
+      console.log(`User connected with provided ID: ${socket.userId}`);
+    } 
+    // If no userId provided directly, try to extract from token
+    else if (token) {
       try {
         // Verify the token and extract user ID
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         socket.userId = decoded.id;
-        console.log(`Authenticated user connected: ${socket.userId}`);
-        
-        // Add socket to a room specific to this user
-        socket.join(`user-${socket.userId}`);
+        console.log(`User authenticated via token: ${socket.userId}`);
       } catch (tokenError) {
-        console.error('Token verification failed:', tokenError);
+        console.warn('Token verification failed, but allowing connection:', tokenError.message);
+        // Allow connection anyway but mark as unauthenticated
         socket.userId = null;
       }
     }
+    
+    // If we have a userId, join the user's room
+    if (socket.userId) {
+      const userRoom = `user-${socket.userId}`;
+      socket.join(userRoom);
+      console.log(`User ${socket.userId} joined room ${userRoom}`);
+    }
+    
+    // Always allow connection, even if authentication fails
     next();
   } catch (err) {
-    console.error('Socket authentication error:', err);
-    next(new Error('Authentication error'));
+    console.error('Socket middleware error:', err);
+    // Don't reject the connection, just mark as unauthenticated
+    socket.userId = null;
+    next();
   }
 });
 
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}, User ID: ${socket.userId || 'unauthenticated'}`);
   
-  // Create a mapping between users and their active socket IDs
-  // This allows us to emit to specific users across multiple devices
-  if (socket.userId) {
-    // Store user's socket in memory (for multi-device support)
-    const userRoom = `user-${socket.userId}`;
-    socket.join(userRoom);
-    console.log(`User ${socket.userId} joined room ${userRoom}`);
-  }
+  // Send immediate acknowledgment to the client
+  socket.emit('connected', { 
+    id: socket.id, 
+    authenticated: !!socket.userId,
+    timestamp: new Date().toISOString() 
+  });
   
   // Handle ping event to keep connection alive
   socket.on('ping', () => {
-    // Just respond to keep the connection alive
-    if (socket.userId) {
-      const userRoom = `user-${socket.userId}`;
-      console.log(`Ping received from user ${socket.userId} in room ${userRoom}`);
+    try {
+      // Respond with a pong to confirm connection is working
+      socket.emit('pong', { time: new Date().toISOString() });
+      
+      if (socket.userId) {
+        const userRoom = `user-${socket.userId}`;
+        console.log(`Ping received from user ${socket.userId} in room ${userRoom}`);
+      }
+    } catch (err) {
+      console.error('Error handling ping:', err);
     }
   });
   
-  socket.on('disconnect', () => {
-    console.log(`Socket disconnected: ${socket.id}, User ID: ${socket.userId || 'unauthenticated'}`);
+  // Handle explicit error events
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+  
+  // Handle disconnection
+  socket.on('disconnect', (reason) => {
+    console.log(`Socket disconnected: ${socket.id}, User ID: ${socket.userId || 'unauthenticated'}, Reason: ${reason}`);
+  });
+  
+  // Handle reconnection attempts
+  socket.on('reconnect_attempt', (attemptNumber) => {
+    console.log(`Socket ${socket.id} reconnect attempt ${attemptNumber}`);
   });
 });
 

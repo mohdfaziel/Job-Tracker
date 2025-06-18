@@ -23,6 +23,8 @@ export const useNotifications = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [socket, setSocket] = useState(null);
+  const [connectionError, setConnectionError] = useState(false);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
   const { user } = useAuth();
 
   // Load notifications from local storage on mount
@@ -41,30 +43,94 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       // Use the correct URL based on environment
-      const socketUrl = import.meta.env.VITE_API_URL 
-        ? new URL(import.meta.env.VITE_API_URL).origin 
-        : 'http://localhost:5000';
+      let socketUrl = 'http://localhost:5000'; // Default fallback
+      
+      try {
+        // More robust URL detection
+        if (import.meta.env.VITE_API_URL) {
+          // Extract origin from the API URL
+          const apiUrl = new URL(import.meta.env.VITE_API_URL);
+          socketUrl = apiUrl.origin;
+        }
+        
+        // In production, try to use the same domain if we're on it
+        if (window.location.hostname !== 'localhost' && 
+            window.location.protocol === 'https:') {
+          // If we're on the actual frontend domain in production, use relative URL
+          socketUrl = window.location.origin;
+        }
+      } catch (error) {
+        console.error('Error parsing socket URL:', error);
+      }
       
       console.log(`Connecting to socket at: ${socketUrl}`);
+      setConnectionAttempts(prev => prev + 1);
       
       const newSocket = io(socketUrl, {
+        path: '/socket.io', // Explicit path
         auth: {
           token: localStorage.getItem('token'),
           userId: user.id // Send user ID for proper room assignment
-        }
+        },
+        transports: ['polling', 'websocket'], // Try polling first, then upgrade
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
+        timeout: 20000,
+        withCredentials: true,
+        forceNew: connectionAttempts > 0, // Force new connection after failures
+        autoConnect: true
       });      newSocket.on('notification', (data) => {
-        console.log('Received notification:', data);
-        addNotification(data.message, data.type);
+        try {
+          console.log('Received notification:', data);
+          if (data && data.message) {
+            addNotification(data.message, data.type || 'info');
+          } else {
+            console.warn('Received incomplete notification data:', data);
+          }
+        } catch (error) {
+          console.error('Error processing notification:', error);
+        }
       });
-      
-      newSocket.on('connect', () => {
+        newSocket.on('connect', () => {
         console.log('Socket connected with ID:', newSocket.id);
-        addNotification(`Connected successfully. Notifications will now sync across all your devices.`, 'success');
+        // Don't add a notification to avoid spamming the user
+        console.log('Socket connection established successfully');
       });
 
+      newSocket.on('connected', (data) => {
+        console.log('Received server confirmation:', data);
+      });
+
+      newSocket.on('pong', (data) => {
+        console.log('Received pong from server:', data);
+      });
+
+      // Connection error handling
       newSocket.on('connect_error', (error) => {
         console.error('Socket connection error:', error);
-        addNotification(`Connection error: ${error.message}. Real-time updates may be unavailable.`, 'error');
+        // Don't add a notification for each error to avoid notification spam
+        console.log(`Connection error: ${error.message}. Will retry automatically.`);
+      });
+
+      // For reconnection success
+      newSocket.on('reconnect', (attemptNumber) => {
+        console.log(`Socket reconnected after ${attemptNumber} attempts`);
+      });
+
+      // For reconnection failures
+      newSocket.on('reconnect_error', (error) => {
+        console.error('Socket reconnection error:', error);
+      });
+
+      // For disconnections
+      newSocket.on('disconnect', (reason) => {
+        console.log(`Socket disconnected. Reason: ${reason}`);
+        if (reason === 'io server disconnect') {
+          // The server has forcefully disconnected the socket
+          console.log('Server disconnected the socket, attempting to reconnect...');
+          newSocket.connect();
+        }
       });
 
       setSocket(newSocket);
@@ -74,16 +140,43 @@ export const NotificationProvider = ({ children }) => {
       };
     }
   }, [user]);
-  
-  // Keep socket connection alive with a ping every minute
+    // More robust ping mechanism
   useEffect(() => {
     if (socket) {
+      // Less frequent pings to reduce network traffic
       const pingInterval = setInterval(() => {
         if (socket.connected) {
           console.log('Sending ping to keep socket connection alive');
-          socket.emit('ping');
+          
+          try {
+            // Send ping with timestamp to measure response time
+            const pingTime = Date.now();
+            socket.emit('ping', { time: pingTime }, () => {
+              // Optional callback if ping is acknowledged
+              const latency = Date.now() - pingTime;
+              console.log(`Ping acknowledged with ${latency}ms latency`);
+              setConnectionError(false);
+            });
+            
+            // Set a timeout to detect if ping doesn't get acknowledged
+            setTimeout(() => {
+              if (socket.connected) {
+                console.log('Checking socket health...');
+              }
+            }, 5000);
+          } catch (err) {
+            console.error('Error sending ping:', err);
+          }
+        } else {
+          console.log('Socket disconnected, attempting to reconnect');
+          setConnectionError(true);
+          try {
+            socket.connect();
+          } catch (err) {
+            console.error('Reconnection attempt failed:', err);
+          }
         }
-      }, 60000); // 1 minute
+      }, 120000); // 2 minutes (reduced frequency)
 
       return () => clearInterval(pingInterval);
     }
@@ -142,13 +235,27 @@ export const NotificationProvider = ({ children }) => {
       console.error('Error clearing notifications in storage:', error);
     }
   };
-
-  // Context value
+  // Context value with connection status 
   const value = {
     notifications,
     addNotification,
     removeNotification,
     clearNotifications,
+    isConnected: socket ? socket.connected : false,
+    connectionError,
+    reconnect: () => {
+      if (socket) {
+        console.log('Manually attempting to reconnect socket');
+        try {
+          socket.connect();
+          return true;
+        } catch (err) {
+          console.error('Manual reconnection failed:', err);
+          return false;
+        }
+      }
+      return false;
+    }
   };
 
   return (

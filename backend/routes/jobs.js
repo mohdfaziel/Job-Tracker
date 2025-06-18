@@ -128,12 +128,22 @@ router.post('/', async (req, res) => {
     await job.save();
 
     // Send real-time notification to all user's connected devices
-    const io = req.app.get('io');
-    const userRoom = `user-${req.user._id}`;
-    io.to(userRoom).emit('notification', {
-      message: `New job application added for ${job.position} at ${job.company}`,
-      type: 'success'
-    });
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const userRoom = `user-${req.user._id}`;
+        console.log(`Emitting job creation notification to room: ${userRoom}`);
+        io.to(userRoom).emit('notification', {
+          message: `New job application added for ${job.position} at ${job.company}`,
+          type: 'success',
+          timestamp: new Date().toISOString(),
+          jobId: job._id.toString()
+        });
+      }
+    } catch (error) {
+      console.error('Failed to emit socket notification for job creation:', error);
+      // Continue with the response even if notification fails
+    }
 
     res.status(201).json(job);
   } catch (error) {
@@ -164,12 +174,22 @@ router.put('/:id', async (req, res) => {
     }
 
     // Send real-time notification to all user's connected devices
-    const io = req.app.get('io');
-    const userRoom = `user-${req.user._id}`;
-    io.to(userRoom).emit('notification', {
-      message: `Job application updated: ${job.position} at ${job.company}`,
-      type: 'info'
-    });
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const userRoom = `user-${req.user._id}`;
+        console.log(`Emitting job update notification to room: ${userRoom}`);
+        io.to(userRoom).emit('notification', {
+          message: `Job application updated: ${job.position} at ${job.company}`,
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          jobId: job._id.toString()
+        });
+      }
+    } catch (error) {
+      console.error('Failed to emit socket notification for job update:', error);
+      // Continue with the response even if notification fails
+    }
 
     res.json(job);
   } catch (error) {
@@ -193,12 +213,22 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Send real-time notification to all user's connected devices
-    const io = req.app.get('io');
-    const userRoom = `user-${req.user._id}`;
-    io.to(userRoom).emit('notification', {
-      message: `Job application deleted: ${job.position} at ${job.company}`,
-      type: 'warning'
-    });
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const userRoom = `user-${req.user._id}`;
+        console.log(`Emitting job deletion notification to room: ${userRoom}`);
+        io.to(userRoom).emit('notification', {
+          message: `Job application deleted: ${job.position} at ${job.company}`,
+          type: 'warning',
+          timestamp: new Date().toISOString(),
+          jobId: job._id.toString()
+        });
+      }
+    } catch (error) {
+      console.error('Failed to emit socket notification for job deletion:', error);
+      // Continue with the response even if notification fails
+    }
 
     res.json({ message: 'Job deleted successfully' });
   } catch (error) {

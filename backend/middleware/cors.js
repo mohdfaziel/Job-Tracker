@@ -3,8 +3,15 @@ const verifyCors = (req, res, next) => {
   // Log the request for debugging
   console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'unknown'}`);
   
-  // Allow from any origin
-  res.header('Access-Control-Allow-Origin', '*');
+  // Use proper CORS handling for different origins
+  const origin = req.headers.origin;
+  if (origin) {
+    // Use the actual origin for CORS to support credentials
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    // If no origin, use wildcard (doesn't support credentials)
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   
   // Allow credentials
   res.header('Access-Control-Allow-Credentials', 'true');
