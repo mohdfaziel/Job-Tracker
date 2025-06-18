@@ -149,14 +149,13 @@ const Layout = () => {
 
         {/* User Profile Section */}
         <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between">              <div className="flex items-center space-x-3">
               <div className="p-2 bg-gray-100 rounded-full">
                 <User className="h-4 w-4 text-gray-600" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+              <div className="max-w-[150px]">
+                <p className="text-sm font-medium text-gray-900 overflow-hidden text-ellipsis whitespace-nowrap">{user?.name}</p>
+                <p className="text-xs text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap">{user?.email}</p>
               </div>
             </div>
             <button
