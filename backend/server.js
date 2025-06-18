@@ -8,6 +8,7 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import jobRoutes from './routes/jobs.js';
 import authMiddleware from './middleware/auth.js';
+import verifyCors from './middleware/cors.js';
 
 // Load environment variables based on NODE_ENV
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
@@ -16,27 +17,14 @@ console.log(`Server starting in ${process.env.NODE_ENV || 'development'} mode`);
 
 const app = express();
 const httpServer = createServer(app);
-// Define allowed origins
-const allowedOrigins = [
-  'http://localhost:3000', 
-  'http://localhost:3001',
-  'https://job-tracker-elite.vercel.app',
-  process.env.FRONTEND_URL,
-  // Add additional origins if needed
-];
-
+// For Vercel deployment specifically, we need a simpler CORS setup
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*', // In production, consider tightening this for security
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 const io = new Server(httpServer, {
@@ -48,6 +36,7 @@ connectDB();
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(verifyCors); // Extra CORS handling for Vercel
 app.use(express.json());
 
 // Socket.io connection handling
