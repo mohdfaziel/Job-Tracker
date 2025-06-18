@@ -1,4 +1,10 @@
-const API_BASE = 'http://localhost:5000/api';
+// Define API base URL based on environment
+const API_BASE = import.meta.env.VITE_API_URL || 
+                 (window.location.hostname === 'localhost' ? 
+                  'http://localhost:5000/api' : 
+                  `${window.location.protocol}//${window.location.hostname}/api`);
+
+console.log('Using API URL:', API_BASE);
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
