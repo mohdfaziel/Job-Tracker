@@ -91,7 +91,6 @@ const Layout = () => {
         return <Info className="h-4 w-4 text-blue-500" />;
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50 flex relative">
       {/* Overlay for mobile when sidebar is open */}
@@ -168,10 +167,8 @@ const Layout = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col md:ml-0">        {/* Header */}
+      </div>      {/* Main Content */}
+      <div className="flex-1 flex flex-col md:ml-0 min-h-screen">        {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 ml-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -303,6 +300,28 @@ const Layout = () => {
         <main className="flex-1 p-6">
           <Outlet />
         </main>
+          {/* Footer */}
+        <footer className="bg-white border-t border-gray-200 py-4 px-6 mt-auto">
+          <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
+            <div className="mb-3 sm:mb-0 flex items-center">
+              <span className="font-medium text-gray-700">I'm Mohd Faziel</span>
+              <a 
+                href="https://www.faziel.me" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="ml-3 bg-primary-50 text-primary-700 hover:bg-primary-100 px-3 py-1 rounded-full font-medium transition-colors flex items-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Visit My Portfolio
+              </a>
+            </div>
+            <div className="text-gray-500">
+              &copy; {new Date().getFullYear()} Job Tracker. All rights reserved.
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
