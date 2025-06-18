@@ -34,9 +34,15 @@ const io = new Server(httpServer, {
 // Connect to MongoDB
 connectDB();
 
-// Middleware
+// Middleware - Order matters!
+// Handle OPTIONS pre-flight 
+app.options('*', cors(corsOptions));
+
+// Apply CORS for all routes
 app.use(cors(corsOptions));
 app.use(verifyCors); // Extra CORS handling for Vercel
+
+// Parse JSON bodies
 app.use(express.json());
 
 // Socket.io connection handling
@@ -77,15 +83,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// API error handling
+app.use('/api', (req, res, next) => {
+  // Handle direct access to API endpoints that don't exist
+  res.status(404).json({ 
+    success: false,
+    message: `API Route ${req.originalUrl} not found`
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err.message);
   console.error('Stack trace:', err.stack);
   
+  // Set CORS headers for error responses too
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
-    message: err.message || 'Something went wrong!',
-    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
+    success: false,
+    message: err.message || 'Something went wrong on the server!',
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
   });
 });
 

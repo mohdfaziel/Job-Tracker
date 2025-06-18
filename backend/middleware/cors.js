@@ -1,7 +1,13 @@
 // CORS middleware specifically for Vercel deployment
 const verifyCors = (req, res, next) => {
+  // Log the request for debugging
+  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'unknown'}`);
+  
   // Allow from any origin
   res.header('Access-Control-Allow-Origin', '*');
+  
+  // Allow credentials
+  res.header('Access-Control-Allow-Credentials', 'true');
   
   // Allow specific headers
   res.header('Access-Control-Allow-Headers', 
@@ -9,11 +15,15 @@ const verifyCors = (req, res, next) => {
     
   // Allow specific methods
   res.header('Access-Control-Allow-Methods', 
-    'GET, POST, PUT, DELETE, OPTIONS');
+    'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    
+  // Set max age for preflight results cache
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    return res.status(204).send();
+    console.log('Handling OPTIONS preflight request');
+    return res.status(204).end();
   }
   
   next();
