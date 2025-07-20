@@ -305,7 +305,7 @@ const Layout = () => {
             <div className="mb-3 sm:mb-0 flex items-center">
               <span className="font-medium text-gray-700">I'm Mohd Faziel</span>
               <a 
-                href="https://www.faziel.me" 
+                href="https://faziel.vercel.app/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="ml-3 bg-primary-50 text-primary-700 hover:bg-primary-100 px-3 py-1 rounded-full font-medium transition-colors flex items-center gap-1"
